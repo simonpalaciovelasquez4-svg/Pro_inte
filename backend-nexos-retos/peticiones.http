@@ -1,0 +1,186 @@
+@baseUrl = http://localhost:3001
+@apiUrl = {{baseUrl}}/api
+@email = estudiante.{{$guid}}@ejemplo.demo
+@password = ClaveDemo2026!
+
+### Comprobar API y conexión con MySQL
+GET {{baseUrl}}/health
+
+### Autenticación: registrar un participante nuevo
+# Ejecuta una vez y conserva el correo dinámico para iniciar sesión.
+# El registro devuelve un token Bearer y crea el usuario con estado Activo.
+# @name register
+POST {{apiUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "nombre": "Estudiante de demostración",
+  "correo": "{{email}}",
+  "contrasena": "{{password}}"
+}
+
+### Autenticación: iniciar sesión
+# @name login
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "correo": "{{email}}",
+  "contrasena": "{{password}}"
+}
+
+@token = {{login.response.body.data.token}}
+
+### Autenticación: consultar el usuario asociado al token
+GET {{apiUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+### Datos completos (las seis entidades)
+GET {{apiUrl}}/data
+Authorization: Bearer {{token}}
+
+### Listar empresas
+GET {{apiUrl}}/empresas
+Authorization: Bearer {{token}}
+
+### Listar categorías
+GET {{apiUrl}}/categorias
+Authorization: Bearer {{token}}
+
+### Listar prioridades
+GET {{apiUrl}}/prioridades
+Authorization: Bearer {{token}}
+
+### Listar usuarios
+GET {{apiUrl}}/usuarios
+Authorization: Bearer {{token}}
+
+### Listar retos
+GET {{apiUrl}}/retos
+Authorization: Bearer {{token}}
+
+### Listar registros
+GET {{apiUrl}}/registros
+Authorization: Bearer {{token}}
+
+### Consultar un reto existente (ID de demostración)
+GET {{apiUrl}}/retos/r1
+Authorization: Bearer {{token}}
+
+### Crear una empresa
+# @name createEmpresa
+POST {{apiUrl}}/empresas
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "nombre": "Empresa de prueba",
+  "nit": "{{$timestamp}}{{$randomInt}}",
+  "sector": "Tecnología",
+  "contacto": "Ana Ejemplo",
+  "correo": "empresa.{{$guid}}@ejemplo.demo",
+  "telefono": "3001234567"
+}
+
+### Actualizar la empresa creada arriba
+PUT {{apiUrl}}/empresas/{{createEmpresa.response.body.data.id}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "nombre": "Empresa de prueba actualizada",
+  "nit": "{{$timestamp}}{{$randomInt}}",
+  "sector": "Tecnología",
+  "contacto": "Ana Ejemplo",
+  "correo": "empresa.actualizada.{{$guid}}@ejemplo.demo",
+  "telefono": "3001234567"
+}
+
+### Consultar la empresa creada arriba
+GET {{apiUrl}}/empresas/{{createEmpresa.response.body.data.id}}
+Authorization: Bearer {{token}}
+
+### Eliminar la empresa creada arriba
+# Este DELETE elimina el registro creado por la petición createEmpresa.
+DELETE {{apiUrl}}/empresas/{{createEmpresa.response.body.data.id}}
+Authorization: Bearer {{token}}
+
+### Crear una categoría
+POST {{apiUrl}}/categorias
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "nombre": "Accesibilidad",
+  "descripcion": "Soluciones inclusivas para todos."
+}
+
+### Crear una prioridad
+POST {{apiUrl}}/prioridades
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "nombre": "Urgente",
+  "nivel": 4
+}
+
+### Crear un perfil de usuario desde el CRUD
+# El CRUD no configura contraseña; usa /auth/register para crear una cuenta
+# que pueda iniciar sesión. Usuarios no administradores solo pueden crear
+# perfiles Participante/Activo.
+POST {{apiUrl}}/usuarios
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "nombre": "Usuario sin credenciales",
+  "correo": "usuario.crud.{{$guid}}@ejemplo.demo",
+  "rol": "Participante",
+  "estado": "Activo"
+}
+
+### Crear un reto (usa IDs relacionados existentes del seed)
+POST {{apiUrl}}/retos
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "nombre": "Reto de ejemplo",
+  "descripcion": "Propuesta para mejorar un proceso.",
+  "empresaId": "e1",
+  "categoriaId": "c1",
+  "prioridadId": "p2",
+  "fechaInicio": "2026-10-21",
+  "fechaFin": "2026-12-31",
+  "estado": "Abierto"
+}
+
+### Crear un registro (usa un par usuario/reto no registrado)
+POST {{apiUrl}}/registros
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "usuarioId": "u6",
+  "retoId": "r8",
+  "fechaRegistro": "2026-10-21",
+  "observacion": "Me interesa participar en este reto.",
+  "estado": "Pendiente"
+}
+
+### Eliminar un registro por ID
+# Sustituye ID_REGISTRO por el id devuelto al crear el registro.
+DELETE {{apiUrl}}/registros/ID_REGISTRO
+Authorization: Bearer {{token}}
+
+### Códigos de error: consultar un ID inexistente
+GET {{apiUrl}}/retos/ID_INEXISTENTE
+Authorization: Bearer {{token}}
+
+### Códigos de error: faltan campos obligatorios (se espera 400)
+POST {{apiUrl}}/categorias
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{ "nombre": "Categoría incompleta" }
